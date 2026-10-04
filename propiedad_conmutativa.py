@@ -1,5 +1,6 @@
 import os
 import random
+from fractions import Fraction
 
 import matplotlib.pyplot as plt
 
@@ -51,6 +52,9 @@ def suma_mayor_a_menor(N):
     """
     Suma los términos desde el de mayor magnitud
     hasta el de menor magnitud.
+
+    Como 1 / (k(k + 1)) decrece con k, el orden k = 1, ..., N
+    ya es de mayor a menor módulo.
     """
 
     terminos = generar_terminos(N)
@@ -120,22 +124,26 @@ def suma_kahan(N):
 
 def valor_teorico(N):
     """
-    Calcula el valor teórico:
+    Calcula el valor teórico exacto:
 
         b_N = N / (N + 1)
+
+    Se usa Fraction para que la referencia no tenga redondeo.
     """
 
-    return N / (N + 1)
+    return Fraction(N, N + 1)
 
 
 def error_relativo(resultado, teorico):
     """
-    Calcula el error relativo.
+    Calcula el error relativo entre un resultado en float
+    y el valor teórico exacto.
     """
 
-    return abs(
-        resultado - teorico
-    ) / abs(teorico)
+    return float(
+        abs(Fraction(resultado) - teorico)
+        / abs(teorico)
+    )
 
 
 def evaluar_algoritmos(N):
@@ -249,7 +257,8 @@ def _graficar_errores(
     plt.plot(
         valores_N,
         errores_menor,
-        label="Menor a mayor"
+        label="Menor a mayor",
+        linewidth=2.5
     )
 
     plt.plot(
@@ -258,10 +267,13 @@ def _graficar_errores(
         label="Aleatoria"
     )
 
+    # Kahan y menor a mayor pueden coincidir: se usa línea punteada.
     plt.plot(
         valores_N,
         errores_kahan,
-        label="Kahan"
+        label="Kahan",
+        linestyle="--",
+        color="black"
     )
 
     plt.yscale("log")

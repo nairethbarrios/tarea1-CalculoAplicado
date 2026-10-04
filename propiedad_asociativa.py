@@ -146,10 +146,27 @@ def _graficar_asociativa(
         else b
     )
 
-    plt.title(
+    titulo = (
         rf"Propiedad asociativa: $b={base_mostrada}$, "
         rf"tipo={nombre}"
     )
+
+    # Con float, b^k puede pasar el máximo representable (overflow)
+    # y la serie se corta antes de N = 1000.
+    if valores_validos[-1] < 1000:
+
+        titulo += (
+            "\nOverflow en b^k: último N válido = "
+            f"{valores_validos[-1]}"
+        )
+
+        print(
+            f"tipo={nombre}, b={base_mostrada}: "
+            f"overflow en b^k, último N válido = "
+            f"{valores_validos[-1]}"
+        )
+
+    plt.title(titulo)
 
     plt.xlabel(r"$N$")
     plt.ylabel(r"$a_N$")
@@ -214,15 +231,20 @@ def experimento_bonus():
 
         suma = 0.0
         potencia = 1.0
+        error_termino = 0.0
 
         for N in range(1, 1001):
 
             potencia *= b
 
-            suma += (
-                1.0
-                + potencia
-                - potencia
+            termino = 1.0 + potencia - potencia
+
+            suma += termino
+
+            # Error de cada término respecto de 1.
+            error_termino = max(
+                error_termino,
+                abs(termino - 1.0)
             )
 
             valores.append(N)
@@ -238,7 +260,8 @@ def experimento_bonus():
 
         print(
             f"b = {b}: "
-            f"máx |a_N - N| = {maximo_error:.3e}"
+            f"máx |a_N - N| = {maximo_error:.3e} | "
+            f"máx |término - 1| = {error_termino:.3e}"
         )
 
         plt.figure(figsize=(9, 5))
@@ -289,22 +312,12 @@ def experimento_bonus():
         f"Suma con int de Python para N={N}: {suma}"
     )
 
-    # Se muestra el límite de los enteros de tamaño fijo.
+    # Se muestra el límite de los enteros de tamaño fijo (int64).
     try:
 
         p = np.array(
             [10**18],
             dtype=np.int64
-        )
-
-        print(
-            "10^18 como int64:",
-            p[0]
-        )
-
-        print(
-            "10^18 * 10 como int64:",
-            p * 10
         )
 
         uno = np.array(
@@ -313,8 +326,23 @@ def experimento_bonus():
         )
 
         print(
-            "(1 + 10^18) - 10^18 con int64:",
-            (uno + p) - p
+            "10^18 como int64:",
+            p[0]
+        )
+
+        # 10^19 no entra en int64: el resultado se desborda.
+        grande = p * 10
+
+        print(
+            "10^18 * 10 como int64 (desborda):",
+            grande[0]
+        )
+
+        # Aun después del desbordamiento, en esta prueba
+        # (1 + x) - x da 1 por el comportamiento modular de int64.
+        print(
+            "(1 + 10^19) - 10^19 con int64:",
+            (uno + grande) - grande
         )
 
     except Exception as error:

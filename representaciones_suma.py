@@ -35,7 +35,7 @@ def b_directa(N):
     """
     Calcula b_N directamente:
 
-        b_N = sum(1 / (k(k + 1)))
+        b_N = 1/(1*2) + 1/(2*3) + ... + 1/(N(N + 1))
     """
 
     suma = 0.0
@@ -60,19 +60,13 @@ def b_telescopica(N):
 
     for k in range(1, N + 1):
 
-        suma += (
-            1.0 / k
-            - 1.0 / (k + 1)
-        )
+        suma += (1.0 / k - 1.0 / (k + 1))
 
     return suma
 
 
 def b_teorico(N):
-    return Fraction(
-        N,
-        N + 1
-    )
+    return Fraction(N, N + 1)
 
 
 def error_relativo(resultado, teorico):
@@ -85,27 +79,21 @@ def error_relativo(resultado, teorico):
     )
 
 
-def c_racionalizada(N):
+def termino_racionalizado(k):
     """
-    Utiliza la forma racionalizada:
+    Término de c_N en la forma racionalizada:
 
         1 / (sqrt(k^2 + 1) + k)
     """
 
-    suma = 0.0
-
-    for k in range(1, N + 1):
-
-        suma += 1.0 / (
-            math.sqrt(k * k + 1) + k
-        )
-
-    return suma
+    return 1.0 / (
+        math.sqrt(k * k + 1) + k
+    )
 
 
-def c_cancelacion(N):
+def termino_cancelacion(k):
     """
-    Utiliza la forma:
+    Término de c_N en la forma con resta:
 
         sqrt(k^2 + 1) - k
 
@@ -113,20 +101,40 @@ def c_cancelacion(N):
     puede perderse precisión.
     """
 
+    return math.sqrt(k * k + 1) - k
+
+
+def c_racionalizada(N):
+    """
+    Calcula c_N sumando los términos racionalizados.
+    """
+
     suma = 0.0
 
     for k in range(1, N + 1):
 
-        suma += (
-            math.sqrt(k * k + 1) - k
-        )
+        suma += termino_racionalizado(k)
+
+    return suma
+
+
+def c_cancelacion(N):
+    """
+    Calcula c_N sumando los términos con resta.
+    """
+
+    suma = 0.0
+
+    for k in range(1, N + 1):
+
+        suma += termino_cancelacion(k)
 
     return suma
 
 
 def experimento_representaciones():
 
-    # Valores utilizados para estudiar el error relativo de b_N.
+    # Valores de N pedidos por la consigna.
     valores_N = (
         [1]
         + list(
@@ -136,57 +144,39 @@ def experimento_representaciones():
 
     errores_directa = []
     errores_telescopica = []
+    diferencias = []
 
-    suma_directa = 0.0
-    suma_telescopica = 0.0
-
-    siguiente_N = iter(
-        valores_N
+    print(
+        "\nCalculando b_N y c_N para "
+        "N = 1, 10, 20, ..., 10000..."
     )
 
-    objetivo = next(
-        siguiente_N
-    )
+    for N in valores_N:
 
-    # Las sumas se acumulan una sola vez para evitar recalcular.
-    for k in range(1, 10001):
+        # Error relativo de las dos formas de b_N.
+        teorico = b_teorico(N)
 
-        suma_directa += (
-            1.0 / (k * (k + 1))
+        errores_directa.append(
+            error_relativo(
+                b_directa(N),
+                teorico
+            )
         )
 
-        suma_telescopica += (
-            1.0 / k
-            - 1.0 / (k + 1)
+        errores_telescopica.append(
+            error_relativo(
+                b_telescopica(N),
+                teorico
+            )
         )
 
-        if k == objetivo:
-
-            teorico = b_teorico(k)
-
-            errores_directa.append(
-                error_relativo(
-                    suma_directa,
-                    teorico
-                )
+        # Diferencia absoluta D_N entre las dos formas de c_N.
+        diferencias.append(
+            abs(
+                c_racionalizada(N)
+                - c_cancelacion(N)
             )
-
-            errores_telescopica.append(
-                error_relativo(
-                    suma_telescopica,
-                    teorico
-                )
-            )
-
-            try:
-
-                objetivo = next(
-                    siguiente_N
-                )
-
-            except StopIteration:
-
-                break
+        )
 
     plt.figure(
         figsize=(10, 6)
@@ -221,40 +211,12 @@ def experimento_representaciones():
         "representaciones_b.png"
     )
 
-    # Se comparan las dos formas de c_N.
-    valores_c = list(
-        range(1, 10001)
-    )
-
-    diferencias = []
-
-    suma_c1 = 0.0
-    suma_c2 = 0.0
-
-    for N in valores_c:
-
-        k = N
-
-        suma_c1 += 1.0 / (
-            math.sqrt(k * k + 1) + k
-        )
-
-        suma_c2 += (
-            math.sqrt(k * k + 1) - k
-        )
-
-        diferencias.append(
-            abs(
-                suma_c1 - suma_c2
-            )
-        )
-
     plt.figure(
         figsize=(10, 6)
     )
 
     plt.plot(
-        valores_c,
+        valores_N,
         diferencias
     )
 
@@ -286,12 +248,9 @@ def experimento_representaciones():
         10000
     ]:
 
-        c1 = c_racionalizada(N)
-        c2 = c_cancelacion(N)
-
         print(
             f"N = {N}: "
-            f"D_N = {abs(c1 - c2):.3e}"
+            f"D_N = {diferencias[valores_N.index(N)]:.3e}"
         )
 
 
@@ -368,13 +327,9 @@ def experimento_bonus():
         100_000_000
     ]:
 
-        forma_estable = 1.0 / (
-            math.sqrt(k * k + 1) + k
-        )
+        forma_estable = termino_racionalizado(k)
 
-        forma_cancelacion = (
-            math.sqrt(k * k + 1) - k
-        )
+        forma_cancelacion = termino_cancelacion(k)
 
         diferencia_relativa = abs(
             forma_estable
@@ -410,13 +365,9 @@ def experimento_bonus():
             1_000_001
         ):
 
-            forma_estable = 1.0 / (
-                math.sqrt(k * k + 1) + k
-            )
+            forma_estable = termino_racionalizado(k)
 
-            forma_cancelacion = (
-                math.sqrt(k * k + 1) - k
-            )
+            forma_cancelacion = termino_cancelacion(k)
 
             diferencia_relativa = abs(
                 forma_estable
